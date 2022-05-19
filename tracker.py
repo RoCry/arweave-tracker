@@ -1,12 +1,12 @@
 import asyncio
 import itertools
 import math
-from datetime import datetime, timezone
 import json
 import os
 import time
 from typing import Union
 
+from metric import Metric
 from util import logger, read_last_jsonline, chunks
 from arweave import ArweaveFetcher
 
@@ -18,7 +18,6 @@ class Tracker(object):
 
     transactions_path = "transactions.jsonl"
     posts_path = "posts.jsonl"
-    metrics_path = "metrics.json"
 
     def __init__(
         self,
@@ -56,7 +55,8 @@ class Tracker(object):
 
         # allow metrics fail
         try:
-            self.generate_metric()
+            m = Metric()
+            m.generate_metrics("dist/metrics.json")
         except Exception as e:
             logger.error(f"Failed to generate metric: {e}")
 
@@ -195,58 +195,3 @@ class Tracker(object):
                 s = json.dumps(d, ensure_ascii=False)
                 f.write(s + "\n")
                 hf.write(s + "\n")
-
-    # TODO: history metric per day
-    def generate_metric(self):
-        with open(self.posts_path, "r") as f:
-            all_posts = [json.loads(line) for line in f.readlines()]
-        all_posts = list(filter(lambda p: "error" not in p, all_posts))
-        if len(all_posts) == 0:
-            logger.warn("No posts found")
-            return
-        last_tx = read_last_jsonline(self.transactions_path)
-        if last_tx is None:
-            logger.warn("No transactions found")
-            return
-
-        logger.info(f"Generating metric from {len(all_posts)} history posts")
-
-        metrics = {
-            "updated_at": datetime.now(timezone.utc).astimezone().isoformat(),
-            "last_post_time": datetime.fromtimestamp(all_posts[-1]["timestamp"])
-            .astimezone()
-            .isoformat(),
-            "last_block_height": last_tx["block_height"],
-            "last_block_time": datetime.fromtimestamp(last_tx["block_timestamp"])
-            .astimezone()
-            .isoformat(),
-        }
-
-        if day1 := self.day1_metric(all_posts):
-            metrics["day1"] = day1
-
-        with open(self.metrics_path, "w") as f:
-            f.write(json.dumps(metrics, ensure_ascii=False, indent=2))
-
-    @staticmethod
-    def day1_metric(all_posts: list[dict]):
-        import pandas as pd
-
-        one_day = time.time() - 24 * 3600
-        posts_24h = [p for p in all_posts if int(p["timestamp"]) > one_day]
-        logger.info(f"Generating 24h metric from {len(posts_24h)} history posts")
-        if len(posts_24h) == 0:
-            return None
-
-        df = pd.DataFrame(posts_24h)
-        post_count = len(df)
-        user_count = df["contributor"].nunique()
-        title_count = df["title"].nunique()
-        body_count = df["body"].nunique()
-
-        return {
-            "post": post_count,
-            "user": user_count,
-            "title": title_count,
-            "body": body_count,
-        }

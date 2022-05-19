@@ -30,9 +30,15 @@ jobs:
           git add .
           git commit -am "Update data"
           git push origin deploy
-      - name: Update release
+      - name: Release feeds
         uses: softprops/action-gh-release@v1
         with:
           tag_name: latest
           draft: false
           files: "${{ env.FEED_FILES }}"
+      - name: Release metrics
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: latest
+          draft: false
+          files: "${{ env.METRIC_FILES }}"
