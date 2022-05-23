@@ -69,3 +69,12 @@ def chunks(lst, n):
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):
         yield lst[i : i + n]
+
+
+def put_github_action_env(key: str, value: str):
+    env_file = os.getenv('GITHUB_ENV')
+    if env_file is None:
+        raise Exception("GITHUB_ENV is not set")
+
+    with open(env_file, "a") as f:
+        f.write(f"{key}<<EOF\n{value}\nEOF\n")

@@ -3,7 +3,7 @@ from datetime import datetime
 import markdown
 from jsonfeed import JSONFeed
 
-from util import logger
+from util import logger, put_github_action_env
 
 feed_filename = "posts.feed.json"
 mirror_link_feed_filename = "posts.feed.mirror.json"
@@ -37,6 +37,8 @@ def generate_all_feeds(posts: [dict]):
         feed = generate_feed(posts, mirror_link=opt["mirror_link"], body_lines=opt["body_lines"])
         with open(opt["filename"], "w") as f:
             feed.write(f, "utf-8")
+
+    put_github_action_env("FEED_FILES", "\n".join([opt["filename"] for opt in all_feeds_options]))
 
 
 def generate_feed(posts: [dict], mirror_link: bool, body_lines: int) -> JSONFeed:
