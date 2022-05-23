@@ -171,18 +171,12 @@ class Tracker(object):
                 f.write(line)
 
     def generate_feed(self):
-        from feed import generate_feed, feed_filename
+        from feed import generate_all_feeds
 
         with open(self.posts_path, "r") as f:
             posts = [json.loads(line) for line in f.readlines()]
             posts = list(filter(lambda p: "error" not in p, posts))
-            feed = generate_feed(posts, False)
-            mirror_feed = generate_feed(posts, True)
-
-        with open(feed_filename, "w") as f:
-            feed.write(f, "utf-8")
-        with open(mirror_link_feed_filename, "w") as f:
-            mirror_feed.write(f, "utf-8")
+            generate_all_feeds(posts)
 
     # json lines
     # append to current files and history files

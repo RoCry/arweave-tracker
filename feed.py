@@ -8,8 +8,38 @@ from util import logger
 feed_filename = "posts.feed.json"
 mirror_link_feed_filename = "posts.feed.mirror.json"
 
+all_feeds_options = [
+    {
+        "filename": "posts.feed.json",
+        "mirror_link": False,
+        "body_lines": -1,
+    },
+    {
+        "filename": "posts.feed.mirror.json",
+        "mirror_link": True,
+        "body_lines": -1,
+    },
+    {
+        "filename": "posts.feed.tiny.json",
+        "mirror_link": False,
+        "body_lines": 3,
+    },
+    {
+        "filename": "posts.feed.mirror.tiny.json",
+        "mirror_link": True,
+        "body_lines": 3,
+    },
+]
 
-def generate_feed(posts: [dict], mirror_link: bool) -> JSONFeed:
+
+def generate_all_feeds(posts: [dict]):
+    for opt in all_feeds_options:
+        feed = generate_feed(posts, mirror_link=opt["mirror_link"], body_lines=opt["body_lines"])
+        with open(opt["filename"], "w") as f:
+            feed.write(f, "utf-8")
+
+
+def generate_feed(posts: [dict], mirror_link: bool, body_lines: int) -> JSONFeed:
     feed_url_base = "https://raw.githubusercontent.com/RoCry/arweave-tracker/deploy"
     feed = JSONFeed(
         title="Recent mirror.xyz updates",
@@ -21,23 +51,27 @@ def generate_feed(posts: [dict], mirror_link: bool) -> JSONFeed:
     )
     for p in posts:
         try:
-            feed.add_item(**_entry_to_feed_item(p, mirror_link))
+            feed.add_item(**_entry_to_feed_item(p, mirror_link, body_lines))
         except Exception as e:
             logger.error(f"Failed to add post to feed: {e}")
     return feed
 
 
-def _entry_to_feed_item(p: dict, mirror_link: bool) -> dict:
+def _entry_to_feed_item(p: dict, mirror_link: bool, body_lines: int) -> dict:
     contributor = p["contributor"]
     digest = p["digest"]
     _id = p["id"]
+    body = p["body"]
+    if body_lines >= 1:
+        body = "\n".join(body.split("\n")[:body_lines])
+
     item = {
         "title": p["title"],
         "link": f"https://mirror.xyz/{contributor}/{digest}"
         if mirror_link
         else f"https://fakemirror.github.io/?id={_id}",
         "unique_id": f"arweave://{_id}",
-        "description": markdown.markdown(p["body"]),
+        "description": markdown.markdown(body),
         "author_name": contributor,
         "author_link": f"https://mirror.xyz/{contributor}",
         "pubdate": datetime.fromtimestamp(int(p["timestamp"])),
