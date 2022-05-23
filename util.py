@@ -61,7 +61,7 @@ def test_read_last_line():
 
 
 def lines_of_file(path: str) -> int:
-    with open(path, 'r') as f:
+    with open(path, "r") as f:
         return len(f.readlines())
 
 
@@ -72,7 +72,7 @@ def chunks(lst, n):
 
 
 def put_github_action_env(key: str, value: str):
-    env_file = os.getenv('GITHUB_ENV')
+    env_file = os.getenv("GITHUB_ENV")
     if env_file is None:
         raise Exception("GITHUB_ENV is not set")
 

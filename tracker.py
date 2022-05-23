@@ -7,7 +7,6 @@ import os
 import time
 from typing import Union
 
-from feed import mirror_link_feed_filename
 from util import logger, read_last_jsonline, chunks
 from arweave import ArweaveFetcher
 
@@ -93,7 +92,9 @@ class Tracker(object):
 
         group_by_keys_txs = {}
         for tx in txs:
-            key = tx["block_height"] // self.history_batch_size * self.history_batch_size
+            key = (
+                tx["block_height"] // self.history_batch_size * self.history_batch_size
+            )
             group_by_keys_txs.setdefault(key, []).append(tx)
 
         group_by_keys_posts = {}
@@ -133,7 +134,7 @@ class Tracker(object):
             offset += 1
         for i, lines in enumerate(chunks(total_lines, chunk_size)):
             new_path = ".".join(comps[:-1]) + f".{i+offset}.json"
-            with open(new_path, "a") as f: # append to file
+            with open(new_path, "a") as f:  # append to file
                 f.writelines(lines)
         os.remove(path)
 
