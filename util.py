@@ -7,10 +7,13 @@ from typing import Union, Any, Optional
 import aiohttp
 
 logging.basicConfig(
-    level=os.environ.get("LOGLEVEL", logging.INFO),
+    level=logging.INFO,
     format="%(asctime)s %(name)s - [%(levelname)s] > %(message)s",
 )
 logger = logging.getLogger("arweave-tracker")
+logger.level = logging.getLevelName(
+    os.environ.get("LOGLEVEL", logging.getLevelName(logging.INFO)).upper()
+)
 
 
 async def get(session: aiohttp.ClientSession, url: str, timeout: int = 10):
