@@ -64,8 +64,8 @@ class Metric(object):
             return results
         return results[-limit:]
 
-    def generate_recent_tx(self):
-        df = self._recent_history_data_in_days("transactions", days=14)
+    def generate_recent_tx_fig(self, output: str, days=14):
+        df = self._recent_history_data_in_days("transactions", days=days)
 
         df["datetime"] = pd.to_datetime(df["block_timestamp"], unit="s").round("1d")
         df["post"] = df["id"]
@@ -77,11 +77,10 @@ class Metric(object):
 
         df = df.groupby("datetime").nunique()
         logger.debug(f"{len(df)} grouped txs: \n{df.head()}")
-        df.plot(legend=True, figsize=(12, 12))
-        # plt.savefig("posts.png")
-        plt.show()
+        df.plot(legend=True, figsize=(12, 8))
+        plt.savefig(output)
+        # plt.show()
 
-    # TODO: history metric per day
     def generate_metrics(self, output: str):
         last_24h_txs = self._recent_history_data_in_days(
             "transactions", 1, round_to_day=False
@@ -107,7 +106,11 @@ class Metric(object):
         logger.debug(f"Metrics: {metrics}")
         with open(output, "w") as f:
             f.write(json.dumps(metrics, ensure_ascii=False, indent=2))
-        put_github_action_env("METRIC_FILES", output)
+
+        recent_txs_fig = f"dist/recent_mirror.png"
+        self.generate_recent_tx_fig(recent_txs_fig)
+
+        put_github_action_env("METRIC_FILES", "\n".join([output, recent_txs_fig]))
 
     @staticmethod
     def last_24h_tx_metric(df: pd.DataFrame):
