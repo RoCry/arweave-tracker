@@ -5,3 +5,4 @@ fire~=0.4.0
 feedgenerator~=2.0.0
 django-jsonfeed~=0.3.1
 markdown~=3.3.6
+matplotlib~=3.5.1
