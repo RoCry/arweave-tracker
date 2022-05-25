@@ -11,17 +11,17 @@ from util import logger, put_github_action_env
 
 class Metric(object):
     def _recent_history_data_in_days(
-        self,
-        key: str,
-        days=7,
-        timestamp_key: str = "block_timestamp",
-        round_to_day=True,
+            self,
+            key: str,
+            days=7,
+            timestamp_key: str = "block_timestamp",
+            round_to_day=True,
     ) -> pd.DataFrame:
         to_timestamp = (
             (
                 datetime.now()
-                .replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
-                .timestamp()
+                    .replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
+                    .timestamp()
             )
             if round_to_day
             else datetime.now().timestamp()
@@ -65,7 +65,7 @@ class Metric(object):
             return results
         return results[-limit:]
 
-    def generate_recent_tx_fig(self, output: str, days=14):
+    def generate_recent_tx_fig(self, output: str, days=14, ax=None):
         df = self._recent_history_data_in_days("transactions", days=days)
 
         df["datetime"] = pd.to_datetime(df["block_timestamp"], unit="s").round("1d")
@@ -78,8 +78,8 @@ class Metric(object):
 
         df = df.groupby("datetime").nunique()
         logger.debug(f"{len(df)} grouped txs: \n{df.head()}")
-        df.plot(legend=True, figsize=(12, 8))
-        plt.savefig(output)
+        df.plot(ax=ax, legend=True, figsize=(12, 8))
+        # plt.savefig(output)
         # plt.show()
 
     def generate_metrics(self, output: str):
@@ -97,8 +97,8 @@ class Metric(object):
             "updated_at": datetime.now(timezone.utc).astimezone().isoformat(),
             "last_block_height": int(last_tx["block_height"]),
             "last_block_time": datetime.fromtimestamp(last_tx["block_timestamp"])
-            .astimezone()
-            .isoformat(),
+                .astimezone()
+                .isoformat(),
         }
 
         if last_24h := self.last_24h_tx_metric(last_24h_txs):
@@ -112,6 +112,49 @@ class Metric(object):
         self.generate_recent_tx_fig(recent_txs_fig)
 
         put_github_action_env("METRIC_FILES", "\n".join([output, recent_txs_fig]))
+
+    def load_bitcoin(self, since_timestamp: int):
+        since_timestamp_ms = since_timestamp * 1000
+        df = pd.read_json("tests/BTCUSDT.json")
+        df = df[df[0] >= since_timestamp_ms]
+        df = df.rename(columns={0: "timestamp", 1: "open", 2: "high", 3: "low", 4: "close"})
+        df["datetime"] = pd.to_datetime(df["timestamp"], unit="ms").round("1d")
+        df.set_index("datetime", inplace=True)
+        logger.info(df.head())
+        df = df[["open", "high", "low", "close"]]
+        logger.info(df.head())
+
+        prices = df
+        plt.figure()
+
+        # define width of candlestick elements
+        width = .4
+        width2 = .05
+
+        # define up and down prices
+        up = prices[prices.close >= prices.open]
+        down = prices[prices.close < prices.open]
+
+        up_color = 'green'
+        down_color = 'red'
+
+        # plot up prices
+        plt.bar(up.index, up.close - up.open, width, bottom=up.open, color=up_color)
+        plt.bar(up.index, up.high - up.close, width2, bottom=up.close, color=up_color)
+        plt.bar(up.index, up.low - up.open, width2, bottom=up.open, color=up_color)
+
+        # plot down prices
+        plt.bar(down.index, down.close - down.open, width, bottom=down.open, color=down_color)
+        plt.bar(down.index, down.high - down.open, width2, bottom=down.open, color=down_color)
+        plt.bar(down.index, down.low - down.close, width2, bottom=down.close, color=down_color)
+
+        # rotate x-axis tick labels
+        plt.xticks(rotation=45, ha='right')
+
+        # display candlestick chart
+
+        self.generate_recent_tx_fig("", ax = plt.gca())
+        plt.show()
 
     @staticmethod
     def last_24h_tx_metric(df: pd.DataFrame):
@@ -154,4 +197,9 @@ if __name__ == "__main__":
 
     m = Metric()
     # m.generate_recent_tx()
-    m.generate_metrics("dist/metrics.json")
+    # m.generate_metrics("dist/metrics.json")
+    m.load_bitcoin((
+            datetime.now()
+            .replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
+            .timestamp() - 14 * 24 * 60 * 60
+    ))
