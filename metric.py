@@ -1,5 +1,6 @@
 import glob
 import json
+import time
 from datetime import datetime, timezone
 
 import pandas as pd
@@ -127,6 +128,25 @@ class Metric(object):
             "user": user_count,
             "unique_post": unique_post,
         }
+
+
+def test_load_performance():
+    def load_file(file: str):
+        print(f"testing with file: {file}")
+        start = time.time()
+        pd.read_json(file, lines=True)
+        print(f"df1 costs: {time.time() - start:.4f}")
+
+        start = time.time()
+        pd.DataFrame([json.loads(line) for line in open(file, "r").readlines()])
+        print(f"df2 costs: {time.time() - start:.4f}")
+
+        start = time.time()
+        pd.read_json("[%s]" % ",".join(open(file, "r").readlines()))
+        print(f"df3 costs: {time.time() - start:.4f}")
+
+    load_file("./history/transactions_000928000.jsonl")
+    load_file("./history/posts_000938000.jsonl")
 
 
 if __name__ == "__main__":
