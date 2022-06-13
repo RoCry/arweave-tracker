@@ -135,7 +135,7 @@ class Tracker(object):
         while os.path.exists(".".join(comps[:-1]) + f".{offset}.json"):
             offset += 1
         for i, lines in enumerate(chunks(total_lines, chunk_size)):
-            new_path = ".".join(comps[:-1]) + f".{i+offset}.json"
+            new_path = ".".join(comps[:-1]) + f".{i + offset}.json"
             with open(new_path, "a") as f:  # append to file
                 f.writelines(lines)
         os.remove(path)
@@ -195,5 +195,16 @@ class Tracker(object):
         ) as hf:
             for d in dicts:
                 s = json.dumps(d, ensure_ascii=False)
-                f.write(s + "\n")
                 hf.write(s + "\n")
+
+                # truncate body if needed
+                if "body" in d:
+                    body = d["body"].split("\n")
+                    if len(body) > 800:
+                        logger.info(
+                            f"Truncated body of id: {d['id']}, title: {d['title']} from {len(body)}"
+                        )
+                        d["body"] = "\n".join(body[:400])
+                        s = json.dumps(d, ensure_ascii=False)
+
+                f.write(s + "\n")
