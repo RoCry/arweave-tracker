@@ -119,7 +119,9 @@ class Tracker(object):
             path = os.path.join(self.history_folder, p)
             size = os.path.getsize(path)
             if size >= GITHUB_FILE_LIMIT:
-                parts = math.ceil(size / GITHUB_FILE_LIMIT)
+                # NOTE: this is a hack to split large history files
+                # x2 to make sure we split to smaller files
+                parts = math.ceil(size / GITHUB_FILE_LIMIT) * 2
                 self._split_file(path, parts)
 
     @staticmethod
