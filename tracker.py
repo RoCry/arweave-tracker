@@ -200,11 +200,35 @@ class Tracker(object):
                 # truncate body if needed
                 if "body" in d:
                     body = d["body"].split("\n")
-                    if len(body) > 800:
+                    if len(body) > 500:
                         logger.info(
                             f"Truncated body of id: {d['id']}, title: {d['title']} from {len(body)}"
                         )
-                        d["body"] = "\n".join(body[:400])
+                        d["body"] = "\n".join(body[:300])
                         s = json.dumps(d, ensure_ascii=False)
 
                 f.write(s + "\n")
+
+
+# temporary truncate more
+if __name__ == '__main__':
+    lines = []
+    with open("posts.jsonl") as f:
+        for line in f:
+            lines.append(line)
+
+            # print(line)
+            d = json.loads(line)
+            if "error" in d:
+                continue
+            if "body" in d:
+                body = d["body"].split("\n")
+                if len(body) > 500:
+                    logger.info(
+                        f"Truncated body of id: {d['id']}, title: {d['title']} from {len(body)}"
+                    )
+                    d["body"] = "\n".join(body[:300])
+                    lines[-1] = json.dumps(d, ensure_ascii=False)+"\n"
+    with open("posts.jsonl", "w") as f:
+        f.writelines(lines)
+#
